@@ -23,8 +23,8 @@ import android.widget.TextView;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
-    TextView myScore;
-    ImageView bird,raceRoad,raceRoad1,bg1,bg2,colum;
+    TextView myScore,bestScore;
+    ImageView bird,raceRoad,raceRoad1,raceRoadTop,raceRoadTop1,bg1,bg2;
     ImageView start;
     ImageView tl1,tl2,tl3,tl4,tl5;
     RelativeLayout play;
@@ -38,30 +38,24 @@ public class MainActivity extends AppCompatActivity {
     int SPEEP_TL = 10;
     int TIME_PLAY = 0;
 
-    @SuppressLint("MissingInflatedId")
+    String KEY_SCORE_BEST = "KEY_SCORE_BEST";
+
+    SaveScoreBest saveScoreBest;
+
+    @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        initItem();
+
+        saveScoreBest = new SaveScoreBest(this);
+        bestScore.setText("Điểm cao nhất: "+ saveScoreBest.getIntValue(KEY_SCORE_BEST));
+
         getSizeWindow();
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
-        bird = findViewById(R.id.bird);
-        play = findViewById(R.id.play);
-        raceRoad = findViewById(R.id.raceRoad);
-        raceRoad1 = findViewById(R.id.raceRoad1);
-        bg1 = findViewById(R.id.bg1);
-        bg2 = findViewById(R.id.bg2);
-        start = findViewById(R.id.startGame);
-        myScore = findViewById(R.id.myScore);
-
-        tl1 = findViewById(R.id.tl1);
-        tl2 = findViewById(R.id.tl2);
-        tl3 = findViewById(R.id.tl3);
-        tl4 = findViewById(R.id.tl4);
-        tl5 = findViewById(R.id.tl5);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
@@ -73,27 +67,20 @@ public class MainActivity extends AppCompatActivity {
         setPositionHeightTenLua();
 
         raceRoad1.setX(screenWitch);
+        raceRoadTop1.setX(screenWitch);
         bg2.setX(screenWitch);
-
-//        tl1.setX(screenWitch);
-//        tl1.setY(r1);
-//        tl2.setX(screenWitch+100);
-//        tl2.setY(r2);
-//        tl3.setX(screenWitch+200);
-//        tl3.setY(r3);
-//        tl4.setX(screenWitch+300);
-//        tl4.setY(r4);
 
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                resetTenLua(R.drawable.icon_tenlua);
                 SPEEP_TL = 10;
                 TIME_PLAY = 0;
                 score = 0;
                 myScore.setText(score+"");
                 start.setVisibility(View.GONE);
                 play.setEnabled(true);
-                bird.setX(screenWitch/2);
+                bird.setX(screenWitch/3);
                 bird.setY(screenHeight/5);
                 tl1.setX(screenWitch);
                 tl1.setY(r1);
@@ -106,22 +93,12 @@ public class MainActivity extends AppCompatActivity {
                 tl5.setX(screenWitch+700);
                 tl5.setY(r5);
 
+                birdFlap();
+
                 roadTime = new CountDownTimer(6000000,10) {
                     @Override
                     public void onTick(long millisUntilFinished) {
-                        if(TIME_PLAY >= 5000 && TIME_PLAY <= 15000){
-                            SPEEP_TL = 12;
-                        }
-                        if(TIME_PLAY > 15000 && TIME_PLAY <= 25000){
-                            SPEEP_TL = 14;
-                        }
-                        if(TIME_PLAY > 25000 && TIME_PLAY <= 35000){
-                            SPEEP_TL = 16;
-                        }
-                        if(TIME_PLAY > 35000){
-                            SPEEP_TL = 18;
-                        }
-                        TIME_PLAY += 10;
+                        conditionIncreaseSpeed();
 
                         ItemMove();
 
@@ -142,29 +119,11 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(View v) {
                                 flap.start();
-                                countDownTimerPlay = new CountDownTimer(400,10) {
-                                    @Override
-                                    public void onTick(long millisUntilFinished) {
-                                        bird.setY((float) (bird.getY()-2));
-                                        countDownTimerStart.cancel();
-                                        countDownTimerBird.cancel();
-                                        vaCham(tl1);
-                                        vaCham(tl2);
-                                        vaCham(tl3);
-                                        vaCham(tl4);
-                                        vaCham(tl5);
-                                    }
-
-                                    @Override
-                                    public void onFinish() {
-                                        countDownTimerStart.start();
-                                        countDownTimerBird.start();
-                                    }
-                                }.start();
+                                birdMoveUp();
                             }
                         });
 
-                        if(bird.getY() >= (raceRoad.getY()-60)){
+                        if(bird.getY() >= (raceRoad.getY()-58) || bird.getY() <= (raceRoadTop.getY()+60)){
                             countDownTimerStart.cancel();
                             countDownTimerBird.cancel();
                             roadTime.cancel();
@@ -187,7 +146,9 @@ public class MainActivity extends AppCompatActivity {
                 }.start();
             }
         });
+    }
 
+    private void birdFlap() {
         countDownTimerBird = new CountDownTimer(6000000,100) {
             @Override
             public void onTick(long l) {
@@ -210,6 +171,81 @@ public class MainActivity extends AppCompatActivity {
         }.start();
     }
 
+    private void conditionIncreaseSpeed() {
+        if(TIME_PLAY >= 5000 && TIME_PLAY <= 10000){
+            SPEEP_TL = 12;
+        }
+        if(TIME_PLAY > 10000 && TIME_PLAY <= 15000){
+            SPEEP_TL = 14;
+            resetTenLua(R.drawable.update_tenlua);
+        }
+        if(TIME_PLAY > 15000 && TIME_PLAY <= 20000){
+            SPEEP_TL = 16;
+        }
+        if(TIME_PLAY > 20000 && TIME_PLAY <= 25000){
+            SPEEP_TL = 18;
+            resetTenLua(R.drawable.update_tenlua_quickly);
+        }
+        if(TIME_PLAY > 25000 && TIME_PLAY <= 30000){
+            SPEEP_TL = 20;
+        }
+        if(TIME_PLAY > 35000){
+            SPEEP_TL = 22;
+        }
+        TIME_PLAY += 10;
+    }
+
+    private void birdMoveUp() {
+        countDownTimerPlay = new CountDownTimer(400,10) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                bird.setY((float) (bird.getY()-2));
+                countDownTimerStart.cancel();
+                countDownTimerBird.cancel();
+                vaCham(tl1);
+                vaCham(tl2);
+                vaCham(tl3);
+                vaCham(tl4);
+                vaCham(tl5);
+
+                if(bird.getY() <= (raceRoadTop.getY()+40)){
+                    countDownTimerStart.cancel();
+                    countDownTimerBird.cancel();
+                    roadTime.cancel();
+                    start.setVisibility(View.VISIBLE);
+                    play.setEnabled(false);
+                    fall.start();
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                countDownTimerStart.start();
+                countDownTimerBird.start();
+            }
+        }.start();
+    }
+
+    private void initItem() {
+        bird = findViewById(R.id.bird);
+        play = findViewById(R.id.play);
+        raceRoad = findViewById(R.id.raceRoad);
+        raceRoad1 = findViewById(R.id.raceRoad1);
+        raceRoadTop = findViewById(R.id.raceRoadTop);
+        raceRoadTop1 = findViewById(R.id.raceRoadTop1);
+        bg1 = findViewById(R.id.bg1);
+        bg2 = findViewById(R.id.bg2);
+        start = findViewById(R.id.startGame);
+        myScore = findViewById(R.id.myScore);
+        bestScore = findViewById(R.id.bestScore);
+
+        tl1 = findViewById(R.id.tl1);
+        tl2 = findViewById(R.id.tl2);
+        tl3 = findViewById(R.id.tl3);
+        tl4 = findViewById(R.id.tl4);
+        tl5 = findViewById(R.id.tl5);
+    }
+
     private void setScore(){
         if(bird.getX()-20 <= tl1.getX() && tl1.getX() <= bird.getX()-10
                 || bird.getX()-20 <= tl2.getX() && tl2.getX() <= bird.getX()-10
@@ -218,6 +254,10 @@ public class MainActivity extends AppCompatActivity {
                 || bird.getX()-20 <= tl5.getX() && tl5.getX() <= bird.getX()-10){
             score = score+1;
             myScore.setText(score+"");
+            if(score > saveScoreBest.getIntValue(KEY_SCORE_BEST)){
+                saveScoreBest.putIntValue(KEY_SCORE_BEST,score);
+                bestScore.setText("Kỉ lục: "+ saveScoreBest.getIntValue(KEY_SCORE_BEST));
+            }
             point.start();
         }
     }
@@ -227,11 +267,17 @@ public class MainActivity extends AppCompatActivity {
         if((raceRoad.getX()+screenWitch) <= 0){
             raceRoad.setX(screenWitch);
         }
+        if((raceRoadTop.getX()+screenWitch) <= 0){
+            raceRoadTop.setX(screenWitch);
+        }
         if((bg1.getX()+screenWitch) <= 0){
             bg1.setX(screenWitch);
         }
         if((raceRoad1.getX()+screenWitch) <= 0){
             raceRoad1.setX(screenWitch);
+        }
+        if((raceRoadTop1.getX()+screenWitch) <= 0){
+            raceRoadTop1.setX(screenWitch);
         }
         if((bg2.getX()+screenWitch) <= 0){
             bg2.setX(screenWitch);
@@ -263,10 +309,14 @@ public class MainActivity extends AppCompatActivity {
 
     /** move item*/
     private void ItemMove() {
-        raceRoad.setX((float) raceRoad.getX() - 10);
-        bg1.setX((float) bg1.getX() - 5);
-        raceRoad1.setX((float) raceRoad1.getX() - 10);
-        bg2.setX((float) bg2.getX() - 5);
+        raceRoad.setX((float) raceRoad.getX() - 5);
+        bg1.setX((float) bg1.getX() - 3);
+        raceRoad1.setX((float) raceRoad1.getX() - 5);
+        bg2.setX((float) bg2.getX() - 3);
+        raceRoadTop.setX((float) raceRoad.getX() - 5);
+        bg1.setX((float) bg1.getX() - 3);
+        raceRoadTop1.setX((float) raceRoad1.getX() - 5);
+        bg2.setX((float) bg2.getX() - 3);
         moveTenLua(tl1);
         moveTenLua(tl2);
         moveTenLua(tl3);
@@ -309,6 +359,15 @@ public class MainActivity extends AppCompatActivity {
             play.setEnabled(false);
             fall.start();
         }
+    }
+
+    /** reset tên lửa */
+    private void resetTenLua(int imageTenLua){
+        tl1.setImageResource(imageTenLua);
+        tl2.setImageResource(imageTenLua);
+        tl3.setImageResource(imageTenLua);
+        tl4.setImageResource(imageTenLua);
+        tl5.setImageResource(imageTenLua);
     }
 
     /** get size window*/
